@@ -53,10 +53,18 @@ public class MorseDecoder {
         double[] returnBuffer = new double[totalBinCount];
 
         double[] sampleBuffer = new double[BIN_SIZE * inputFile.getNumChannels()];
+        for (int i = 0; i < sampleBuffer.length; i++) {
+            System.out.println(sampleBuffer[i]);
+        }
         for (int binIndex = 0; binIndex < totalBinCount; binIndex++) {
             // Get the right number of samples from the inputFile
             // Sum all the samples together and store them in the returnBuffer
+            inputFile.readFrames(sampleBuffer, BIN_SIZE);
+            for (double d : sampleBuffer) {
+                returnBuffer[binIndex] += Math.abs(d);
+            }
         }
+        System.out.println(returnBuffer);
         return returnBuffer;
     }
 
@@ -82,13 +90,48 @@ public class MorseDecoder {
          * There are four conditions to handle. Symbols should only be output when you see
          * transitions. You will also have to store how much power or silence you have seen.
          */
+        boolean isPower;
+        boolean wasPower = false;
+        int count = 0;
+        String toReturn = "";
+        for (double d : powerMeasurements) {
+            if (d > POWER_THRESHOLD) {
+                isPower = true;
+            } else {
+                isPower = false;
+            }
+            if (isPower) {
+                if (wasPower) {
+                    count++;
+                } else {
+                    wasPower = true;
+                    if (count > DASH_BIN_COUNT) {
+                        toReturn += " ";
+                    }
+                    count = 1;
+                }
+            } else {
+                if (wasPower) {
+                    wasPower = false;
+                    if (count > DASH_BIN_COUNT) {
+                        toReturn += "-";
+                    } else {
+                        toReturn += ".";
+                    }
+                    count = 1;
+                } else {
+                    count++;
+                }
+            }
+        }
 
         // if ispower and waspower
         // else if ispower and not waspower
         // else if issilence and wassilence
         // else if issilence and not wassilence
 
-        return "";
+        System.out.println("Output is: " + toReturn);
+        return toReturn;
     }
 
     /**
